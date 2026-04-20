@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Interactivo: Deep Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1f4e78 0%, #2e75b6 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #2e75b6;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #1f4e78;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2e75b6, #4a90e2);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .question-container {
+            margin-bottom: 40px;
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .question-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .question {
+            font-size: 1.3em;
+            color: #1f4e78;
+            margin-bottom: 25px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            background: white;
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .option:hover {
+            border-color: #2e75b6;
+            background: #f0f5ff;
+        }
+
+        .option input[type="radio"] {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
+
+        .option.correct {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+            font-weight: 500;
+        }
+
+        .option.incorrect {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+            font-weight: 500;
+        }
+
+        .option.selected:not(.answered) {
+            border-color: #2e75b6;
+            background: #e3f2fd;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .feedback.incorrect {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        .feedback strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #2e75b6, #4a90e2);
+            color: white;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(46, 117, 182, 0.4);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-restart {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-restart:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+
+        .results-container {
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .score {
+            font-size: 3em;
+            color: #2e75b6;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .score-message {
+            font-size: 1.5em;
+            color: #1f4e78;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .results-details {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .result-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.95em;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item.correct {
+            color: #2e7d32;
+        }
+
+        .result-item.incorrect {
+            color: #c62828;
+        }
+
+        .result-item.correct::before {
+            content: "✓ ";
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .result-item.incorrect::before {
+            content: "✗ ";
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .emoji {
+            font-size: 5em;
+            margin: 20px 0;
+        }
+
+        .time-spent {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .question {
+                font-size: 1.1em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .score {
+                font-size: 2.5em;
+            }
+        }
+
+        .question-number {
+            display: inline-block;
+            background: #2e75b6;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Deep Learning Quiz</h1>
+            <p>Pon a prueba tus conocimientos</p>
+        </div>
+
+        <div class="progress-text">
+            <span id="current-question">1</span> / <span id="total-questions">10</span>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+
+        <div id="quiz-container">
+            <!-- Las preguntas se generarán aquí con JavaScript -->
+        </div>
+
+        <div class="results-container" id="results-container">
+            <div class="emoji" id="emoji">🎓</div>
+            <div class="score-message" id="score-message"></div>
+            <div class="score" id="score"></div>
+            <div class="results-details" id="results-details"></div>
+            <div class="time-spent" id="time-spent"></div>
+            <div class="button-group">
+                <button class="btn-restart" onclick="restartQuiz()">🔄 Reintentar</button>
+            </div>
+        </div>
+
+        <div class="button-group" id="button-group">
+            <button class="btn-next" id="next-btn" onclick="nextQuestion()" disabled>Siguiente →</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "¿Cuál es la ecuación fundamental de una neurona?",
+                options: [
+                    "ŷ = f(W·x + b)",
+                    "ŷ = W + x + b",
+                    "ŷ = W × x",
+                    "ŷ = f(b)"
+                ],
+                correct: 0,
+                explanation: "La ecuación ŷ = f(W·x + b) es el corazón de cada neurona. Multiplica la entrada (x) por los pesos (W), suma el sesgo (b), y aplica la función de activación f()."
+            },
+            {
+                question: "¿Qué mide la Loss Function (Función de Pérdida)?",
+                options: [
+                    "La velocidad de aprendizaje",
+                    "La distancia entre la predicción y la realidad",
+                    "El número de capas ocultas",
+                    "La cantidad de datos de entrenamiento"
+                ],
+                correct: 1,
+                explanation: "La Loss Function cuantifica el error. Si predices 50 y la realidad es 120, el loss mide esa brecha. Sin esta métrica, la red no sabría si está mejorando."
+            },
+            {
+                question: "¿Qué es el Backward Propagation?",
+                options: [
+                    "Pasar los datos hacia atrás por la red",
+                    "Calcular derivadas para asignar culpa a cada peso por el error",
+                    "Reducir el número de capas",
+                    "Aumentar el learning rate"
+                ],
+                correct: 1,
+                explanation: "Backward Propagation retrocede por la red calculando gradientes (∂L/∂w). Esto determina cuánto cada peso contribuyó al error, usando la Regla de la Cadena."
+            },
+            {
+                question: "¿Qué es el Gradient?",
+                options: [
+                    "Un color que degrada",
+                    "Un vector de derivadas parciales que apunta hacia el error más rápido",
+                    "El sesgo de la neurona",
+                    "La función de activación"
+                ],
+                correct: 1,
+                explanation: "El gradient (∂L/∂w) es como una brújula del error. Si es negativo, aumenta el peso. Si es positivo, reduce el peso. Siempre caminas en dirección opuesta al gradient."
+            },
+            {
+                question: "¿Cuál es la fórmula de actualización de pesos?",
+                options: [
+                    "w_nuevo = w_actual + η × (∂L/∂w)",
+                    "w_nuevo = w_actual - η × (∂L/∂w)",
+                    "w_nuevo = w_actual × η",
+                    "w_nuevo = ∂L/∂w"
+                ],
+                correct: 1,
+                explanation: "w_nuevo = w_actual - η × (∂L/∂w). El menos (-) es crucial: movemos en dirección OPUESTA al gradient. η (eta) es el learning rate que controla el tamaño del paso."
+            },
+            {
+                question: "¿Qué problema resuelve ReLU (Rectified Linear Unit)?",
+                options: [
+                    "El overfitting",
+                    "El vanishing gradient (gradiente desvaneciente)",
+                    "El underfitting",
+                    "El ruido en los datos"
+                ],
+                correct: 1,
+                explanation: "En redes profundas, multiplicar muchos gradientes < 1 los hace 0 (vanishing gradient). ReLU tiene gradiente = 1 para valores positivos, permitiendo que el error fluya hacia atrás sin diluirse."
+            },
+            {
+                question: "¿Qué es una Época (Epoch)?",
+                options: [
+                    "Una actualización de pesos",
+                    "Un paso a través de una muestra",
+                    "Una pasada completa de todos los datos de entrenamiento",
+                    "Un tipo de función de activación"
+                ],
+                correct: 2,
+                explanation: "Una época = pasar TODOS los datos de entrenamiento una vez a través de la red. Si tienes 1000 imágenes y batch size 100, una época = 10 pasadas."
+            },
+            {
+                question: "¿Si el learning rate (η) es demasiado alto, qué ocurre?",
+                options: [
+                    "El modelo aprende más rápido",
+                    "La red diverge, el error aumenta sin control",
+                    "No hay cambios en los pesos",
+                    "Mejora la precisión automáticamente"
+                ],
+                correct: 1,
+                explanation: "Con η muy alto, los pesos se actualizan demasiado. Saltas sobre el mínimo de error, pueden incluso divergir. Con η muy bajo, converges lentamente."
+            },
+            {
+                question: "¿Cuál es el orden correcto del ciclo de aprendizaje?",
+                options: [
+                    "Update → Forward → Backward → Loss",
+                    "Forward → Loss → Backward → Update",
+                    "Loss → Forward → Update → Backward",
+                    "Backward → Loss → Forward → Update"
+                ],
+                correct: 1,
+                explanation: "El ciclo es: 1) Forward (predice), 2) Loss (mide error), 3) Backward (calcula gradientes), 4) Update (ajusta pesos). Luego repite."
+            },
+            {
+                question: "¿Qué diferencia hay entre Overfitting y Underfitting?",
+                options: [
+                    "No hay diferencia, son sinónimos",
+                    "Overfitting = memoriza datos; Underfitting = modelo muy simple",
+                    "Overfitting = modelo muy simple; Underfitting = memoriza datos",
+                    "Overfitting es mejor que Underfitting siempre"
+                ],
+                correct: 1,
+                explanation: "Overfitting: la red memoriza en lugar de generalizar (desempeño perfecto en entrenamiento, pobre en test). Underfitting: modelo demasiado simple (malo en ambos)."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answers = [];
+        let answered = false;
+        let startTime = Date.now();
+
+        function initQuiz() {
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const container = document.getElementById('quiz-container');
+            const q = quizData[currentQuestion];
+            
+            let html = `
+                <div class="question-container active">
+                    <div class="question-number">Pregunta ${currentQuestion + 1} de ${quizData.length}</div>
+                    <div class="question">${q.question}</div>
+                    <div class="options">
+            `;
+
+            q.options.forEach((option, index) => {
+                html += `
+                    <label class="option" id="option-${index}">
+                        <input type="radio" name="answer" value="${index}" onchange="selectOption(${index})">
+                        ${option}
+                    </label>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div class="feedback" id="feedback"></div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            updateProgress();
+        }
+
+        function selectOption(index) {
+            if (answered) return;
+            
+            const q = quizData[currentQuestion];
+            const feedback = document.getElementById('feedback');
+            const isCorrect = index === q.correct;
+
+            // Mark all options
+            document.querySelectorAll('.option').forEach((opt, i) => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+                if (i === q.correct) {
+                    opt.classList.add('correct');
+                }
+                if (i === index && !isCorrect) {
+                    opt.classList.add('incorrect');
+                }
+                opt.style.pointerEvents = 'none';
+            });
+
+            // Show feedback
+            const feedbackClass = isCorrect ? 'correct' : 'incorrect';
+            const feedbackText = isCorrect ? '✓ ¡Correcto!' : '✗ Incorrecto';
+            
+            feedback.innerHTML = `<strong>${feedbackText}</strong>${q.explanation}`;
+            feedback.classList.add('show', feedbackClass);
+
+            // Update score and answers
+            if (isCorrect) score++;
+            answers[currentQuestion] = { answer: index, correct: isCorrect };
+            answered = true;
+
+            // Enable next button
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < quizData.length - 1) {
+                currentQuestion++;
+                answered = false;
+                document.getElementById('next-btn').disabled = true;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const quizContainer = document.getElementById('quiz-container');
+            const buttonGroup = document.getElementById('button-group');
+            const resultsContainer = document.getElementById('results-container');
+            
+            quizContainer.style.display = 'none';
+            buttonGroup.style.display = 'none';
+            resultsContainer.classList.add('show');
+
+            const percentage = Math.round((score / quizData.length) * 100);
+            const timeSpent = Math.round((Date.now() - startTime) / 1000);
+
+            // Set emoji and message
+            let emoji = '🎓';
+            let message = '';
+            
+            if (percentage === 100) {
+                emoji = '🏆';
+                message = '¡PERFECTO! Eres un maestro de Deep Learning';
+            } else if (percentage >= 80) {
+                emoji = '😍';
+                message = '¡Excelente! Dominas muy bien estos conceptos';
+            } else if (percentage >= 60) {
+                emoji = '😊';
+                message = 'Bien hecho. Tienes buena base, repasa un poco más';
+            } else if (percentage >= 40) {
+                emoji = '🤔';
+                message = 'Necesitas repasar algunos conceptos clave';
+            } else {
+                emoji = '📚';
+                message = 'Vuelve a leer la guía y reintenta';
+            }
+
+            document.getElementById('emoji').textContent = emoji;
+            document.getElementById('score-message').textContent = message;
+            document.getElementById('score').textContent = `${score}/${quizData.length} (${percentage}%)`;
+            document.getElementById('time-spent').textContent = `⏱️ Tiempo: ${timeSpent} segundos`;
+
+            // Build results details
+            let detailsHtml = '<strong>Resumen de respuestas:</strong>';
+            quizData.forEach((q, i) => {
+                const answer = answers[i];
+                const resultClass = answer.correct ? 'correct' : 'incorrect';
+                detailsHtml += `<div class="result-item ${resultClass}">${i + 1}. ${q.question}</div>`;
+            });
+
+            document.getElementById('results-details').innerHTML = detailsHtml;
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            answers = [];
+            answered = false;
+            startTime = Date.now();
+
+            document.getElementById('quiz-container').style.display = 'block';
+            document.getElementById('button-group').style.display = 'flex';
+            document.getElementById('results-container').classList.remove('show');
+            document.getElementById('next-btn').disabled = true;
+
+            renderQuestion();
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / quizData.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('current-question').textContent = currentQuestion + 1;
+            document.getElementById('total-questions').textContent = quizData.length;
+        }
+
+        // Initialize quiz on page load
+        initQuiz();
+    </script>
+</body>
+</html>
